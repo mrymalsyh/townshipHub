@@ -2,7 +2,9 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.shortcuts import redirect, render
 
-from .forms import RegisterForm
+from accounts.decorators import manager_required
+
+from .forms import AdminProfileForm, RegisterForm
 
 
 def register(request):
@@ -15,3 +17,13 @@ def register(request):
         messages.success(request, f"Welcome, {user.first_name or user.username}!")
         return redirect("home")
     return render(request, "accounts/register.html", {"form": form})
+
+
+@manager_required
+def manage_profile(request):
+    form = AdminProfileForm(request.POST or None, instance=request.user)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Profile settings saved.")
+        return redirect("manage_profile")
+    return render(request, "accounts/profile.html", {"form": form})

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Admin Profile &amp; Settings · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>Admin Profile &amp; Settings</h1>
+    <p class="muted">Update the name and contact email shown for your administrator account.</p>
+  </div>
+</div>
+<form method="post" class="profile-settings">
+  {% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Save settings</button>
+</form>
+{% endblock %}

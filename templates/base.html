@@ -7,7 +7,7 @@
   <title>{% block title %}Township Hub{% endblock %}</title>
   {% load static %}
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%2370020f%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 font-weight=%27700%27 text-anchor=%27middle%27 fill=%27%23fedee1%27 font-family=%27sans-serif%27%3EH%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=5">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -15,35 +15,73 @@
   <div class="inner">
     <a class="brand" href="{% url 'home' %}"><span class="sign" aria-hidden="true">H</span> Township Hub</a>
     {% if user.is_authenticated %}
-    <nav class="nav" aria-label="Main">
-      {% if user.is_manager %}
-        <a href="{% url 'dashboard' %}">Overview</a>
-        <a href="{% url 'manage_reports' %}">Reports</a>
-        <a href="{% url 'insights_home' %}">AI insights</a>
-        <a href="{% url 'manage_bookings' %}">Bookings</a>
-        <a href="{% url 'manage_inventory' %}">Items &amp; returns</a>
-        <a href="{% url 'report_map' %}">Map</a>
-      {% else %}
+    {% if not user.is_manager %}
+      <nav class="nav" aria-label="Main">
         <a href="{% url 'home' %}">Home</a>
-        <a href="{% url 'report_create' %}">Report a problem</a>
-        <a href="{% url 'report_list' %}">Reports</a>
+        <a href="{% url 'report_create' %}">Report</a>
         <a href="{% url 'report_map' %}">Map</a>
-        <a href="{% url 'facility_list' %}">Book</a>
-        <a href="{% url 'item_list' %}">Borrow</a>
-      {% endif %}
-    </nav>
+        <a href="{% url 'facility_list' %}">Reserve space</a>
+        <a href="{% url 'item_list' %}">Book item</a>
+      </nav>
+    {% endif %}
     <div class="who">
       <a class="bell" href="{% url 'notification_list' %}" aria-label="Notifications">&#128276;{% if unread_count %}<span class="n" id="bell-n">{{ unread_count }}</span>{% else %}<span class="n" id="bell-n" hidden>0</span>{% endif %}</a>
-      <span>{{ user.first_name|default:user.username }}{% if not user.is_manager %} &middot; {{ user.points }} pts{% endif %}</span>
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">Log out</button></form>
+      {% if user.is_manager %}
+        <span>{{ user.first_name|default:user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">Log out</button></form>
+      {% else %}
+        <details class="profile-menu">
+          <summary class="profile-trigger" aria-label="Open profile menu" title="Profile">
+            <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path d="M12 12a4.25 4.25 0 1 0 0-8.5A4.25 4.25 0 0 0 12 12Zm0 2c-4.1 0-7.5 2.1-7.5 4.75V21h15v-2.25C19.5 16.1 16.1 14 12 14Z"/></svg>
+          </summary>
+          <div class="profile-panel">
+            <strong>{{ user.first_name|default:user.username }}</strong>
+            <span>{{ user.points }} pts</span>
+            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">Log out</button></form>
+          </div>
+        </details>
+      {% endif %}
     </div>
     {% endif %}
   </div>
 </header>
-<main>
+{% if user.is_authenticated and user.is_manager %}
+<div class="admin-layout">
+  <aside class="admin-sidebar" aria-label="Admin navigation">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Admin menu</span>
+      <button class="sidebar-toggle" id="admin-sidebar-toggle" type="button"
+              aria-label="Collapse admin sidebar" aria-expanded="true" aria-controls="admin-sidebar-nav"
+              title="Collapse sidebar">‹</button>
+    </div>
+    <nav id="admin-sidebar-nav" aria-label="Admin sections">
+      <section class="sidebar-section">
+        <h2 class="sidebar-group"><span class="sidebar-icon" aria-hidden="true">📊</span><span class="sidebar-label">Township Hub</span></h2>
+        <a href="{% url 'dashboard' %}" aria-label="Overview" title="Overview" {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">🏠</span><span class="sidebar-label">Overview</span></a>
+        <a href="{% url 'report_map' %}" aria-label="Live Township Map" title="Live Township Map" {% if request.resolver_match.url_name == 'report_map' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">🗺️</span><span class="sidebar-label">Live Township Map</span></a>
+      </section>
+      <section class="sidebar-section">
+        <h2 class="sidebar-group"><span class="sidebar-icon" aria-hidden="true">🛠️</span><span class="sidebar-label">Maintenance &amp; Issues</span></h2>
+        <a href="{% url 'manage_reports' %}" aria-label="Incident Management" title="Incident Management" {% if request.resolver_match.url_name == 'manage_reports' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">📋</span><span class="sidebar-label">Incident Management</span></a>
+        <a href="{% url 'insights_home' %}" aria-label="AI Predictive Insights" title="AI Predictive Insights" {% if request.resolver_match.url_name == 'insights_home' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">🤖</span><span class="sidebar-label">AI Predictive Insights</span></a>
+      </section>
+      <section class="sidebar-section">
+        <h2 class="sidebar-group"><span class="sidebar-icon" aria-hidden="true">📅</span><span class="sidebar-label">Assets &amp; Resources</span></h2>
+        <a href="{% url 'manage_bookings' %}" aria-label="Facility Bookings" title="Facility Bookings" {% if request.resolver_match.url_name == 'manage_bookings' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">🏛️</span><span class="sidebar-label">Facility Bookings</span></a>
+        <a href="{% url 'manage_inventory' %}" aria-label="Inventory &amp; Returns" title="Inventory &amp; Returns" {% if request.resolver_match.url_name == 'manage_inventory' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">📦</span><span class="sidebar-label">Inventory &amp; Returns</span></a>
+      </section>
+      <section class="sidebar-section">
+        <h2 class="sidebar-group"><span class="sidebar-icon" aria-hidden="true">👤</span><span class="sidebar-label">System</span></h2>
+        <a href="{% url 'manage_profile' %}" aria-label="Admin Profile &amp; Settings" title="Admin Profile &amp; Settings" {% if request.resolver_match.url_name == 'manage_profile' %}aria-current="page"{% endif %}><span class="sidebar-icon" aria-hidden="true">⚙️</span><span class="sidebar-label">Admin Profile &amp; Settings</span></a>
+      </section>
+    </nav>
+  </aside>
+{% endif %}
+<main{% if user.is_authenticated and user.is_manager %} class="admin-main"{% endif %}>
   {% for m in messages %}<div class="msg {{ m.tags }}" role="status">{{ m }}</div>{% endfor %}
   {% block content %}{% endblock %}
 </main>
+{% if user.is_authenticated and user.is_manager %}</div>{% endif %}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 {% if user.is_authenticated %}
 <script>
@@ -62,6 +100,23 @@
     }).catch(function () {});
   }
   setInterval(poll, 30000);
+})();
+</script>
+{% endif %}
+{% if user.is_authenticated and user.is_manager %}
+<script>
+(function () {
+  var layout = document.querySelector(".admin-layout");
+  var toggle = document.getElementById("admin-sidebar-toggle");
+  if (!layout || !toggle) return;
+
+  toggle.addEventListener("click", function () {
+    var collapsed = layout.classList.toggle("sidebar-collapsed");
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.setAttribute("aria-label", collapsed ? "Expand admin sidebar" : "Collapse admin sidebar");
+    toggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+    toggle.textContent = collapsed ? "›" : "‹";
+  });
 })();
 </script>
 {% endif %}
