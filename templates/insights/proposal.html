@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Upgrade proposal: {{ location.name }}{% endblock %}
+{% block content %}
+<div class="pagehead no-print"><a href="{% url 'insights_home' %}">Back to insights</a><button class="btn" onclick="window.print()">Print or save as PDF</button></div>
+<h1>Maintenance and upgrade proposal</h1>
+<p class="muted">{{ location.name }} &middot; {{ category_label }} &middot; prepared {% now "j F Y" %}</p>
+
+<h2>The problem</h2>
+<p>{{ insight.summary }}</p>
+<div class="stats">
+  <div class="stat"><b>{{ h.total }}</b>reports in {{ h.days }} days</div>
+  <div class="stat"><b>{{ h.people }}</b>residents affected</div>
+  <div class="stat"><b>{{ h.open_count }}</b>still open</div>
+</div>
+
+<h2>Recommended action</h2>
+<p>{{ insight.suggested_action }}</p>
+
+<h2>Evidence: every report</h2>
+<div class="table-wrap"><table>
+  <tr><th>Date</th><th>Report</th><th>Exact spot</th><th>Urgency</th><th>Status</th></tr>
+  {% for r in reports %}<tr><td>{{ r.created_at|date:"j M Y" }}</td><td>{{ r.title }}</td><td>{{ r.spot_detail }}</td><td>{{ r.get_urgency_display }}</td><td>{{ r.get_status_display }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

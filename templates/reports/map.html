@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Community map · Township Hub{% endblock %}
+{% block head %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endblock %}
+{% block content %}
+<div class="pagehead"><div><h1>Community map</h1><p class="muted">Open problems in shared areas. Tap a pin to see the reports there.</p></div></div>
+<div id="map" role="img" aria-label="Map of open problems in shared areas"></div>
+{% if not pins %}<p class="empty" style="margin-top:1rem">No open problems in shared areas.</p>{% endif %}
+{{ pins|json_script:"pins-data" }}
+{% endblock %}
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  var pins = JSON.parse(document.getElementById("pins-data").textContent);
+  var map = L.map("map").setView([3.2160, 101.5108], 17);
+  L.tileLayer("https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles style by <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>, hosted by <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
+  }).addTo(map);
+  var bounds = [];
+  pins.forEach(function (p) {
+    var urgent = p.reports.some(function (r) { return r.urgency === "high"; });
+    var colour = urgent ? "#70020f" : "#fedee1";
+    var textColour = urgent ? "#fedee1" : "#70020f";
+    var icon = L.divIcon({className: "", iconSize: [34, 34], iconAnchor: [17, 17],
+      html: '<div style="background:' + colour + ';color:' + textColour + ';border:3px solid #fff;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font:700 15px -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4)">' + p.reports.length + '</div>'});
+    var html = "<b>" + p.name + "</b><br>" + p.reports.map(function (r) {
+      return '<a href="' + r.url + '">' + r.title.replace(/</g, "&lt;") + "</a>"; }).join("<br>");
+    L.marker([p.lat, p.lng], {icon: icon}).addTo(map).bindPopup(html);
+    bounds.push([p.lat, p.lng]);
+  });
+  if (bounds.length > 1) map.fitBounds(bounds, {padding: [40, 40], maxZoom: 18});
+  else if (bounds.length === 1) map.setView(bounds[0], 18);
+})();
+</script>
+{% endblock %}

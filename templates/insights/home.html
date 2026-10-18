@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}AI insights · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>Places with repeating problems</h1>
+    <p class="muted">The same kind of problem reported at least {{ threshold }} times at one place in the last {{ days }} days. Repeated reports usually mean a root cause, not a one-off.</p>
+  </div>
+  <form method="post" action="{% url 'insights_analyse' %}?days={{ days }}&min={{ threshold }}">{% csrf_token %}<button class="btn" type="submit">Analyse now</button></form>
+</div>
+<form method="get" class="inline no-print" style="margin-bottom:1rem">
+  <label>Look back <select name="days" style="width:auto">
+    <option value="30" {% if days == 30 %}selected{% endif %}>30 days</option><option value="60" {% if days == 60 %}selected{% endif %}>60 days</option>
+    <option value="90" {% if days == 90 %}selected{% endif %}>90 days</option><option value="180" {% if days == 180 %}selected{% endif %}>180 days</option></select></label>
+  <label>Minimum reports <select name="min" style="width:auto">
+    <option value="2" {% if threshold == 2 %}selected{% endif %}>2</option><option value="3" {% if threshold == 3 %}selected{% endif %}>3</option>
+    <option value="5" {% if threshold == 5 %}selected{% endif %}>5</option></select></label>
+  <button class="btn small ghost" type="submit">Apply</button>
+</form>
+
+{% for h in hotspots %}
+<article class="hotspot {{ h.severity }}">
+  <h3>{{ h.location }}: {{ h.category_label }} <span class="pill {% if h.severity == 'high' %}red{% else %}yellow{% endif %}">{{ h.total }} reports</span>
+    <span class="pill {% if h.scope == 'outdoor' %}blue{% endif %}">{{ h.scope|title }}</span></h3>
+  <div class="small muted">{{ h.people }} resident{{ h.people|pluralize }} &middot; {{ h.open_count }} still open &middot; first {{ h.first|date:"j M" }}, latest {{ h.last|date:"j M" }}{% if h.spots %} &middot; spots: {{ h.spots|join:" / " }}{% endif %}</div>
+  {% if h.insight %}
+    <div class="ai"><p><b>What this probably means.</b> {{ h.insight.summary }}</p><p style="margin:0"><b>Suggested action.</b> {{ h.insight.suggested_action }}</p>
+      <div class="small muted" style="margin-top:.4rem">Written by {% if h.insight.source == 'ai' %}the AI{% else %}the built-in rules{% endif %} on {{ h.insight.generated_at|date:"j M, H:i" }}</div></div>
+  {% else %}<p class="muted">No write-up yet. Press <b>Analyse now</b>.</p>{% endif %}
+  <a class="btn small ghost" href="{% url 'insight_proposal' h.location_id h.category %}?days={{ days }}">Create upgrade proposal</a>
+</article>
+{% empty %}
+<div class="empty">No repeating problems found with these settings. Try a longer look-back or a lower minimum.</div>
+{% endfor %}
+{% endblock %}

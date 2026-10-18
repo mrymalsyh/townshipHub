@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Bookings · Township Hub{% endblock %}
+{% block content %}
+<h1>Bookings and closures</h1>
+<div class="cols">
+<section>
+  <h2>Close a facility</h2>
+  <p class="muted">For cleaning or maintenance. Anyone with a clashing booking is notified, and all residents see the closure.</p>
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" %}
+    <button class="btn" type="submit">Save closure and notify</button>
+  </form>
+</section>
+<section>
+  <h2>Planned closures</h2>
+  {% if blocks %}<ul class="rows">
+    {% for b in blocks %}<li class="row u-high"><div class="main"><b>{{ b.facility.name }}: {{ b.reason }}</b><div class="small muted">{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"j M, H:i" }}</div></div>
+      <form method="post" action="{% url 'block_delete' b.pk %}">{% csrf_token %}<button class="btn small ghost" type="submit">Remove</button></form></li>{% endfor %}
+  </ul>{% else %}<div class="empty">No closures planned.</div>{% endif %}
+</section>
+</div>
+<h2>Upcoming bookings</h2>
+{% if upcoming %}<div class="table-wrap"><table>
+  <tr><th>Facility</th><th>When</th><th>Resident</th><th>Purpose</th></tr>
+  {% for b in upcoming %}<tr><td>{{ b.facility.name }}</td><td>{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"H:i" }}</td><td>{{ b.user }} {% if b.user.unit %}<span class="muted small">({{ b.user.unit }})</span>{% endif %}</td><td>{{ b.purpose }}</td></tr>{% endfor %}
+</table></div>{% else %}<div class="empty">No upcoming bookings.</div>{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Borrow items · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead"><div><h1>Borrow items</h1><p class="muted">What management can lend you, and how many are free right now.</p></div><a class="btn ghost" href="{% url 'my_loans' %}">My loans</a></div>
+<ul class="rows">
+{% for i in items %}
+  <li class="row {% if i.available == 0 %}u-high{% elif i.available < 3 %}u-medium{% else %}u-low{% endif %}">
+    <div class="main">
+      <a class="title" href="{% url 'item_detail' i.pk %}">{{ i.name }}</a>
+      <div class="small muted">{{ i.description }}</div>
+      {% if i.available == 0 %}<span class="pill red">None available</span>{% else %}<span class="pill green">{{ i.available }} available</span>{% endif %}
+      <span class="small muted">of {{ i.total_quantity }}</span>
+    </div>
+    {% if i.available %}<a class="btn small" href="{% url 'item_detail' i.pk %}">Borrow</a>{% endif %}
+  </li>
+{% empty %}<li class="empty">No items yet.</li>{% endfor %}
+</ul>
+{% endblock %}

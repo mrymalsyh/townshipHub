@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Notifications · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Notifications</h1>
+  {% if unread_count %}<form method="post" action="{% url 'notifications_read_all' %}">{% csrf_token %}<button class="btn ghost small" type="submit">Mark all as read</button></form>{% endif %}
+</div>
+{% if items %}
+<ul class="rows">
+  {% for n in items %}
+  <li class="row {% if n.is_read %}done u-low{% else %}u-medium{% endif %}">
+    <div class="main">{% if n.link %}<a class="title" href="{{ n.link }}">{{ n.message }}</a>{% else %}<span class="title">{{ n.message }}</span>{% endif %}</div>
+    <div class="side">{{ n.created_at|date:"j M, H:i" }}</div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}<div class="empty">Nothing yet. Alerts about your reports, bookings and your neighbourhood show up here.</div>{% endif %}
+{% endblock %}

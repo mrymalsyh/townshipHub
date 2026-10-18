@@ -1,0 +1,6 @@
+Django>=5.1,<7
+psycopg[binary]>=3.2
+Pillow>=10
+python-dotenv>=1.0
+# Optional, only for real AI write-ups (also put ANTHROPIC_API_KEY in .env):
+# anthropic

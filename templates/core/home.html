@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Home · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>Hello, {{ user.first_name|default:user.username }}</h1>
+    <p class="muted">{{ user.unit|default:"Welcome to your township." }}{% if user.is_vulnerable %} &middot; Priority help is on for your reports.{% endif %}</p>
+  </div>
+  <a class="btn" href="{% url 'report_create' %}">Report a problem</a>
+</div>
+
+{% if closures %}
+  {% for c in closures %}
+  <div class="notice"><b>{{ c.facility.name }}</b> closed for {{ c.reason|lower }}: {{ c.starts_at|date:"j M, H:i" }} to {{ c.ends_at|date:"j M, H:i" }}.
+    <a href="{% url 'facility_detail' c.facility.pk %}">See the facility</a></div>
+  {% endfor %}
+{% endif %}
+
+<h2>Around your neighbourhood</h2>
+{% for r in alerts %}
+  <div class="sign"><span class="glyph" aria-hidden="true">&#9888;</span>
+    <div><b>{{ r.title }}</b> at {{ r.location.name }}
+      {% if r.alternative_route %}<br>Management advice: {{ r.alternative_route }}{% endif %}
+      <br><a href="{{ r.get_absolute_url }}">See details{% if r.status != 'received' %} ({{ r.get_status_display|lower }}){% endif %}</a></div>
+  </div>
+{% empty %}
+  <div class="empty">No open problems in shared areas right now. Nice.</div>
+{% endfor %}
+{% if more_alerts %}<p><a href="{% url 'report_map' %}">{{ more_alerts }} more open problem{{ more_alerts|pluralize }} in shared areas. See the map.</a></p>{% endif %}
+
+<div class="cols">
+  <section>
+    <h2>Your open reports</h2>
+    {% if my_open %}<ul class="rows">{% for r in my_open %}{% include "reports/_row.html" %}{% endfor %}</ul>
+    {% else %}<div class="empty">You have no open reports. Spotted something? <a href="{% url 'report_create' %}">Report it</a>.</div>{% endif %}
+  </section>
+  <section>
+    <h2>Your upcoming bookings</h2>
+    {% if my_bookings %}<ul class="rows">
+      {% for b in my_bookings %}<li class="row u-low"><div class="main"><b>{{ b.facility.name }}</b><div class="small muted">{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"H:i" }}</div></div></li>{% endfor %}
+    </ul>
+    {% else %}<div class="empty">Nothing booked. <a href="{% url 'facility_list' %}">Find a space</a>.</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

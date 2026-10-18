@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} · Township Hub{% endblock %}
+{% block content %}
+<h1>{{ item.name }}</h1>
+<p class="muted">{{ item.description }}</p>
+<div class="stats">
+  <div class="stat"><b>{{ item.available }}</b>available now</div>
+  <div class="stat"><b>{{ item.on_loan }}</b>on loan</div>
+  <div class="stat"><b>{{ item.total_quantity }}</b>owned</div>
+</div>
+{% if item.available %}
+<h2>Borrow it</h2>
+<form method="post">{% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Reserve</button>
+</form>
+<p class="small muted">Collect it from the management office, and return it there so it can be checked.</p>
+{% else %}<div class="empty">All units are out right now. Check back soon.</div>{% endif %}
+<p><a href="{% url 'item_list' %}">Back to all items</a></p>
+{% endblock %}

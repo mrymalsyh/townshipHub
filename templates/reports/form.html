@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Report a problem · Township Hub{% endblock %}
+{% block content %}
+<h1>Report a problem</h1>
+<p class="muted">Choose <b>Inside</b> for problems in your home or building (only you and management see it). Choose <b>Outside</b> for shared areas: neighbours get an alert and can add tips.</p>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Send report</button>
+  <a class="btn ghost" href="{% url 'report_list' %}">Cancel</a>
+</form>
+{% endblock %}

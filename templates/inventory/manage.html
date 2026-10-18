@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Items and returns · Township Hub{% endblock %}
+{% block content %}
+<h1>Items and returns</h1>
+
+<h2>Waiting to be returned</h2>
+{% if outstanding %}
+<ul class="rows">
+{% for l in outstanding %}
+  <li class="row {% if l.is_overdue %}u-high{% else %}u-medium{% endif %}" style="display:block">
+    <b>{{ l.quantity }} x {{ l.item.name }}</b> with {{ l.user }}{% if l.user.unit %} <span class="muted small">({{ l.user.unit }})</span>{% endif %}
+    {% if l.is_overdue %}<span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>{% else %}<span class="small muted">due {{ l.due_at|date:"D j M, H:i" }}</span>{% endif %}
+    <form method="post" action="{% url 'loan_return' l.pk %}" enctype="multipart/form-data" class="inline" style="margin-top:.5rem">{% csrf_token %}
+      <select name="condition" aria-label="Condition on return">
+        {% for value, label in return_form.fields.condition.choices %}<option value="{{ value }}"{% if value == 'good' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <input type="text" name="notes" placeholder="Notes (optional)" aria-label="Notes">
+      <input type="file" name="photo" accept="image/*" aria-label="Photo" style="width:auto">
+      <button class="btn small" type="submit">Check in</button>
+    </form>
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">Everything has been returned.</div>{% endif %}
+
+<h2>Stock and condition</h2>
+<div class="table-wrap"><table>
+  <tr><th>Item</th><th>Owned</th><th>On loan</th><th>Broken</th><th>Available</th><th>Advice</th></tr>
+  {% for i in items %}
+  <tr>
+    <td><b>{{ i.name }}</b></td><td>{{ i.total_quantity }}</td><td>{{ i.on_loan }}</td>
+    <td>{{ i.out_of_service }}{% if i.out_of_service %}
+      <form method="post" action="{% url 'item_repaired' i.pk %}" style="display:inline">{% csrf_token %}<button class="linkbtn small" type="submit">mark one repaired</button></form>{% endif %}</td>
+    <td>{{ i.available }}</td>
+    <td>{% if i.advice %}<span class="pill yellow">Check</span> {{ i.advice }}{% else %}<span class="muted">Fine</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+<h2>Recently returned</h2>
+{% if recent %}<div class="table-wrap"><table>
+  <tr><th>Item</th><th>Resident</th><th>Returned</th><th>Condition</th><th>Notes</th></tr>
+  {% for l in recent %}<tr><td>{{ l.quantity }} x {{ l.item.name }}</td><td>{{ l.user }}</td><td>{{ l.returned_at|date:"j M" }}</td>
+    <td><span class="pill {% if l.return_condition == 'good' or l.return_condition == 'unused' %}green{% elif l.return_condition == 'needs_cleaning' %}yellow{% else %}red{% endif %}">{{ l.get_return_condition_display }}</span></td><td>{{ l.admin_notes }}</td></tr>{% endfor %}
+</table></div>{% else %}<div class="empty">No returns recorded yet.</div>{% endif %}
+{% endblock %}

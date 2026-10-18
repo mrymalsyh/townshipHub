@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}My bookings · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>My bookings</h1><a class="btn" href="{% url 'facility_list' %}">Book a space</a></div>
+{% if bookings %}
+<ul class="rows">
+{% for b in bookings %}
+  <li class="row {% if b.pk in hit %}u-high{% elif b.is_upcoming %}u-low{% else %}u-low done{% endif %}">
+    <div class="main">
+      <a class="title" href="{% url 'facility_detail' b.facility.pk %}">{{ b.facility.name }}</a>
+      <div class="small muted">{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"H:i" }}{% if b.purpose %} &middot; {{ b.purpose }}{% endif %}</div>
+      {% if b.status == 'cancelled' %}<span class="pill">Cancelled</span>{% elif not b.is_upcoming %}<span class="pill">Finished</span>{% endif %}
+      {% if b.pk in hit %}<div class="notice" style="margin:.4rem 0 0">This time clashes with a closure. Please cancel and book another time.</div>{% endif %}
+    </div>
+    {% if b.is_upcoming %}<form method="post" action="{% url 'booking_cancel' b.pk %}">{% csrf_token %}<button class="btn small ghost" type="submit">Cancel</button></form>{% endif %}
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">No bookings yet.</div>{% endif %}
+{% endblock %}

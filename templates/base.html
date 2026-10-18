@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#70020f">
+  <title>{% block title %}Township Hub{% endblock %}</title>
+  {% load static %}
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%2370020f%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 font-weight=%27700%27 text-anchor=%27middle%27 fill=%27%23fedee1%27 font-family=%27sans-serif%27%3EH%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=2">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <a class="brand" href="{% url 'home' %}"><span class="sign" aria-hidden="true">H</span> Township Hub</a>
+    {% if user.is_authenticated %}
+    <nav class="nav" aria-label="Main">
+      {% if user.is_manager %}
+        <a href="{% url 'dashboard' %}">Overview</a>
+        <a href="{% url 'manage_reports' %}">Reports</a>
+        <a href="{% url 'insights_home' %}">AI insights</a>
+        <a href="{% url 'manage_bookings' %}">Bookings</a>
+        <a href="{% url 'manage_inventory' %}">Items &amp; returns</a>
+        <a href="{% url 'report_map' %}">Map</a>
+      {% else %}
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'report_create' %}">Report a problem</a>
+        <a href="{% url 'report_list' %}">Reports</a>
+        <a href="{% url 'report_map' %}">Map</a>
+        <a href="{% url 'facility_list' %}">Book</a>
+        <a href="{% url 'item_list' %}">Borrow</a>
+      {% endif %}
+    </nav>
+    <div class="who">
+      <a class="bell" href="{% url 'notification_list' %}" aria-label="Notifications">&#128276;{% if unread_count %}<span class="n" id="bell-n">{{ unread_count }}</span>{% else %}<span class="n" id="bell-n" hidden>0</span>{% endif %}</a>
+      <span>{{ user.first_name|default:user.username }}{% if not user.is_manager %} &middot; {{ user.points }} pts{% endif %}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbtn" type="submit">Log out</button></form>
+    </div>
+    {% endif %}
+  </div>
+</header>
+<main>
+  {% for m in messages %}<div class="msg {{ m.tags }}" role="status">{{ m }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+{% if user.is_authenticated %}
+<script>
+// Check for new alerts every 30 seconds and pop up a small notice.
+(function () {
+  var last = {{ unread_count|default:0 }};
+  function poll() {
+    fetch("{% url 'notifications_badge' %}", {credentials: "same-origin"}).then(function (r) { return r.json(); }).then(function (d) {
+      var n = document.getElementById("bell-n");
+      n.textContent = d.count; n.hidden = d.count === 0;
+      if (d.count > last) {
+        var t = document.getElementById("toast"); t.textContent = d.latest; t.classList.add("show");
+        setTimeout(function () { t.classList.remove("show"); }, 6000);
+      }
+      last = d.count;
+    }).catch(function () {});
+  }
+  setInterval(poll, 30000);
+})();
+</script>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

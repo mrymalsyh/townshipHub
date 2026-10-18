@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Overview · Township Hub{% endblock %}
+{% block content %}
+<h1>Township overview</h1>
+<div class="stats">
+  <div class="stat"><b>{{ open_n }}</b>open reports</div>
+  <div class="stat"><b>{{ resolve_rate }}%</b>resolved ({{ resolved_n }} of {{ total }})</div>
+  <div class="stat"><b>{% if avg_hours is not None %}{{ avg_hours }} h{% else %}&ndash;{% endif %}</b>average time to fix</div>
+  <div class="stat"><b>{{ hotspot_count }}</b>repeating problem places</div>
+</div>
+
+{% if hotspot_count %}
+<div class="sign"><span class="glyph" aria-hidden="true">&#9888;</span><div><b>{{ hotspot_count }} place{{ hotspot_count|pluralize }} keep having the same problem.</b> <a href="{% url 'insights_home' %}">Read the AI conclusions</a></div></div>
+{% endif %}
+
+<div class="cols">
+<section>
+  <h2>Where problems are open</h2>
+  {% for name, count, pct in top_places %}
+    <div style="margin-bottom:.7rem"><div class="inline" style="justify-content:space-between"><b>{{ name }}</b><span>{{ count }}</span></div><div class="bar"><span style="width:{{ pct }}%"></span></div></div>
+  {% empty %}<div class="empty">No open reports. Everything is fixed.</div>{% endfor %}
+</section>
+<section>
+  <h2>Needs attention</h2>
+  <h3>Priority residents waiting</h3>
+  {% if priority_open %}<ul class="rows">{% for r in priority_open %}<li class="row u-high"><div class="main"><a class="title" href="{{ r.get_absolute_url }}">{{ r.title }}</a><div class="small muted">{{ r.reporter }} &middot; {{ r.get_status_display }}</div></div></li>{% endfor %}</ul>
+  {% else %}<p class="muted">None.</p>{% endif %}
+  <h3>Overdue items</h3>
+  {% if overdue %}<ul class="rows">{% for l in overdue %}<li class="row u-high"><div class="main"><b>{{ l.quantity }} x {{ l.item.name }}</b><div class="small muted">{{ l.user }} &middot; due {{ l.due_at|date:"j M" }}</div></div></li>{% endfor %}</ul>
+  {% else %}<p class="muted">None.</p>{% endif %}
+</section>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+<li class="row u-{{ r.urgency }}{% if not r.is_open %} done{% endif %}">
+  <div class="main">
+    <a class="title" href="{{ r.get_absolute_url }}">{{ r.title }}</a>
+    <div class="small muted">{{ r.location.name }}{% if r.spot_detail %}, {{ r.spot_detail }}{% endif %} &middot; {{ r.get_category_display }}</div>
+    <div>
+      {% if r.is_outdoor %}<span class="pill blue">Public</span>{% else %}<span class="pill">Private</span>{% endif %}
+      <span class="pill {% if r.status == 'resolved' %}green{% endif %}">{{ r.get_status_display }}</span>
+      {% if r.urgency == 'high' %}<span class="pill red">Urgent</span>{% endif %}
+    </div>
+  </div>
+  <div class="side">{{ r.created_at|date:"j M" }}</div>
+</li>

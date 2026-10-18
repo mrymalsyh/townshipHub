@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Log in · Township Hub{% endblock %}
+{% block content %}
+<div class="login">
+  <h1>Log in</h1>
+  <p class="muted">Report problems, book spaces and see what is happening in your neighbourhood.</p>
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn" type="submit">Log in</button>
+    <a class="btn ghost" href="{% url 'register' %}">Create an account</a>
+  </form>
+  <p class="small muted" style="margin-top:1.5rem">Demo: <b>aisyah</b> / demo123 (resident) &middot; <b>admin</b> / admin123 (management)</p>
+</div>
+{% endblock %}

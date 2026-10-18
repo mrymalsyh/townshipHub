@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}All reports · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div><h1>All reports</h1><p class="muted">Sorted by priority: urgency, priority residents, and neighbours confirming it is still broken.</p></div>
+  <div class="inline">
+    <a class="btn small {% if not scope %}{% else %}ghost{% endif %}" href="?show={{ show }}">Everything</a>
+    <a class="btn small {% if scope == 'indoor' %}{% else %}ghost{% endif %}" href="?scope=indoor&show={{ show }}">Indoor</a>
+    <a class="btn small {% if scope == 'outdoor' %}{% else %}ghost{% endif %}" href="?scope=outdoor&show={{ show }}">Outdoor</a>
+    {% if show == 'open' %}<a class="btn small ghost" href="?show=all{% if scope %}&scope={{ scope }}{% endif %}">Include resolved</a>{% else %}<a class="btn small ghost" href="?show=open{% if scope %}&scope={{ scope }}{% endif %}">Open only</a>{% endif %}
+  </div>
+</div>
+{% if reports %}
+<ul class="rows">
+{% for r in reports %}
+  <li class="row u-{{ r.urgency }}{% if not r.is_open %} done{% endif %}">
+    <div class="main">
+      <a class="title" href="{{ r.get_absolute_url }}">{{ r.title }}</a>
+      <div class="small muted">{{ r.location.name }}{% if r.spot_detail %}, {{ r.spot_detail }}{% endif %} &middot; {{ r.get_category_display }} &middot; {{ r.reporter }}</div>
+      <div>
+        {% if r.is_outdoor %}<span class="pill blue">Outdoor</span>{% else %}<span class="pill">Indoor</span>{% endif %}
+        <span class="pill {% if r.status == 'resolved' %}green{% endif %}">{{ r.get_status_display }}</span>
+        {% if r.reporter.is_vulnerable %}<span class="pill yellow">Priority resident</span>{% endif %}
+        {% if r.still_broken_count %}<span class="pill red">{{ r.still_broken_count }} confirm still broken</span>{% endif %}
+      </div>
+    </div>
+    <div class="side">Score {{ r.priority_score }}<br>{{ r.created_at|date:"j M" }}</div>
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">No reports match.</div>{% endif %}
+{% endblock %}

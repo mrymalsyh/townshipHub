@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}My loans · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>My loans</h1><a class="btn" href="{% url 'item_list' %}">Borrow an item</a></div>
+{% if loans %}<ul class="rows">
+{% for l in loans %}
+  <li class="row {% if l.is_overdue %}u-high{% elif l.is_returned %}u-low done{% else %}u-medium{% endif %}">
+    <div class="main">
+      <b>{{ l.quantity }} x {{ l.item.name }}</b>
+      <div class="small muted">Borrowed {{ l.borrowed_at|date:"j M" }}{% if l.purpose %} &middot; {{ l.purpose }}{% endif %}</div>
+      {% if l.is_returned %}<span class="pill green">Returned: {{ l.get_return_condition_display }}</span>{% if l.admin_notes %}<span class="small muted">{{ l.admin_notes }}</span>{% endif %}
+      {% elif l.is_overdue %}<span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>
+      {% else %}<span class="pill yellow">Return by {{ l.due_at|date:"D j M, H:i" }}</span>{% endif %}
+    </div>
+  </li>
+{% endfor %}</ul>{% else %}<div class="empty">You have not borrowed anything yet.</div>{% endif %}
+{% endblock %}

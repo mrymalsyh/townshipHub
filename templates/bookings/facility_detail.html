@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ facility.name }} · Township Hub{% endblock %}
+{% block content %}
+<h1>{{ facility.name }}</h1>
+<p class="muted">{{ facility.description }} Up to {{ facility.capacity }} people.</p>
+<div class="cols">
+<section>
+  <h2>Not available in the next 7 days</h2>
+  {% if blocks or taken %}
+  <ul class="rows">
+    {% for b in blocks %}<li class="row u-high"><div class="main"><b>Closed: {{ b.reason }}</b><div class="small muted">{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"j M, H:i" }}</div></div></li>{% endfor %}
+    {% for b in taken %}<li class="row u-medium"><div class="main"><b>Booked</b><div class="small muted">{{ b.starts_at|date:"D j M, H:i" }} to {{ b.ends_at|date:"H:i" }}</div></div></li>{% endfor %}
+  </ul>
+  {% else %}<div class="empty">Free all week. Pick any time.</div>{% endif %}
+</section>
+<section>
+  <h2>Book it</h2>
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" %}
+    <button class="btn" type="submit">Confirm booking</button>
+  </form>
+</section>
+</div>
+<p><a href="{% url 'facility_list' %}">Back to all facilities</a></p>
+{% endblock %}

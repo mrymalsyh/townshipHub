@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Reports · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Reports</h1>
+  <div class="inline"><a class="btn ghost" href="{% url 'report_map' %}">Open the map</a><a class="btn" href="{% url 'report_create' %}">Report a problem</a></div>
+</div>
+
+<h2>Your reports</h2>
+{% if mine %}<ul class="rows">{% for r in mine %}{% include "reports/_row.html" %}{% endfor %}</ul>
+{% else %}<div class="empty">You have not reported anything yet.</div>{% endif %}
+
+<h2>Open in shared areas</h2>
+<p class="muted">Anyone in the township can see these. Tell us if a problem is still there, or share a way around it.</p>
+{% if community %}<ul class="rows">{% for r in community %}{% include "reports/_row.html" %}{% endfor %}</ul>
+{% else %}<div class="empty">No open problems in shared areas.</div>{% endif %}
+{% endblock %}

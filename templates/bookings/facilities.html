@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Book a space · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead"><div><h1>Book a space</h1><p class="muted">Live status of every shared facility.</p></div><a class="btn ghost" href="{% url 'my_bookings' %}">My bookings</a></div>
+<ul class="rows">
+{% for f in facilities %}
+  <li class="row {% if f.closed_now %}u-high{% elif f.in_use_now %}u-medium{% else %}u-low{% endif %}">
+    <div class="main">
+      <a class="title" href="{% url 'facility_detail' f.pk %}">{{ f.name }}</a>
+      <div class="small muted">{{ f.description }} Up to {{ f.capacity }} people.</div>
+      <div>
+        {% if f.closed_now %}<span class="pill red">Closed: {{ f.closed_now.reason|lower }} until {{ f.closed_now.ends_at|date:"j M, H:i" }}</span>
+        {% elif f.in_use_now %}<span class="pill yellow">In use now</span>
+        {% else %}<span class="pill green">Free now</span>{% endif %}
+        {% if f.next_block %}<span class="pill">{{ f.next_block.reason }} on {{ f.next_block.starts_at|date:"j M, H:i" }}</span>{% endif %}
+      </div>
+    </div>
+    <a class="btn small" href="{% url 'facility_detail' f.pk %}">Book</a>
+  </li>
+{% empty %}<li class="empty">No facilities yet.</li>{% endfor %}
+</ul>
+{% endblock %}

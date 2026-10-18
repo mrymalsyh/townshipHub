@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ report.title }} · Township Hub{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>{{ report.title }}</h1>
+    <div class="muted">{{ report.location.name }}{% if report.spot_detail %}, {{ report.spot_detail }}{% endif %} &middot; {{ report.get_category_display }} &middot; reported {{ report.created_at|date:"j M Y" }}{% if report.reporter == user or user.is_manager %} by {{ report.reporter }}{% endif %}</div>
+    <div style="margin-top:.4rem">
+      {% if report.is_outdoor %}<span class="pill blue">Public</span>{% else %}<span class="pill">Private</span>{% endif %}
+      {% if report.urgency == 'high' %}<span class="pill red">Urgent</span>{% endif %}
+      {% if user.is_manager and report.reporter.is_vulnerable %}<span class="pill yellow">Priority resident</span>{% endif %}
+    </div>
+  </div>
+  {% if user.is_manager %}<a class="btn ghost" href="{% url 'manage_reports' %}">Back to all reports</a>{% endif %}
+</div>
+
+<ol class="line" aria-label="Progress">
+  {% for s in tracker %}<li class="{% if s.done %}done{% endif %}{% if s.current %} current{% endif %}">{{ s.label }}</li>{% endfor %}
+</ol>
+
+{% if report.description %}<p>{{ report.description|linebreaksbr }}</p>{% endif %}
+{% if report.photo %}<p><img class="photo" src="{{ report.photo.url }}" alt="Photo of the problem"></p>{% endif %}
+
+{% if report.alternative_route and report.is_open %}
+<div class="route"><h3>Management advice: what to do instead</h3>{{ report.alternative_route|linebreaksbr }}</div>
+{% endif %}
+
+<div class="cols">
+<section>
+  <h2>What has happened so far</h2>
+  <ul class="timeline">
+    {% for u in updates %}<li><b>{{ u.get_status_display }}</b> <span class="small muted">{{ u.created_at|date:"j M, H:i" }}</span>{% if u.note %}<br>{{ u.note }}{% endif %}</li>{% endfor %}
+  </ul>
+</section>
+
+{% if report.is_outdoor %}
+<section>
+  <h2>Neighbours say</h2>
+  <p><b>{{ broken_count }}</b> say it is still a problem &middot; <b>{{ fixed_count }}</b> say it looks fixed</p>
+  {% if can_vote %}
+  <form method="post" action="{% url 'report_confirm' report.pk %}" class="inline">{% csrf_token %}
+    <button class="btn small warn" name="answer" value="broken">It is still broken</button>
+    <button class="btn small ghost" name="answer" value="fixed">It looks fixed</button>
+  </form>
+  {% if my_vote %}<p class="small muted">Your answer: {% if my_vote.still_broken %}still broken{% else %}looks fixed{% endif %}. You can change it.</p>{% endif %}
+  {% endif %}
+
+  <h3 style="margin-top:1.2rem">Tips from neighbours</h3>
+  {% for t in tips %}<p><b>{{ t.author.first_name|default:t.author.username }}:</b> {{ t.text }}</p>{% empty %}<p class="muted">No tips yet. Know a way around?</p>{% endfor %}
+  <form method="post" action="{% url 'report_tip' report.pk %}">{% csrf_token %}
+    <div class="field">{{ tip_form.text.label_tag }}{{ tip_form.text }}</div>
+    <button class="btn small" type="submit">Share tip</button>
+  </form>
+</section>
+{% endif %}
+</div>
+
+{% if user.is_manager %}
+<h2>Update this report</h2>
+<form method="post" action="{% url 'report_update' report.pk %}">{% csrf_token %}
+  {% with form=update_form %}{% include "_form.html" %}{% endwith %}
+  <button class="btn" type="submit">Save update</button>
+</form>
+{% endif %}
+{% endblock %}

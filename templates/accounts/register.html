@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Create account · Township Hub{% endblock %}
+{% block content %}
+<div class="login">
+  <h1>Create your account</h1>
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" %}
+    <button class="btn" type="submit">Create account</button>
+    <a class="btn ghost" href="{% url 'login' %}">I already have one</a>
+  </form>
+</div>
+{% endblock %}
