@@ -43,6 +43,8 @@
     <button class="btn small ghost" name="answer" value="fixed">It looks fixed</button>
   </form>
   {% if my_vote %}<p class="small muted">Your answer: {% if my_vote.still_broken %}still broken{% else %}looks fixed{% endif %}. You can change it.</p>{% endif %}
+  {% else %}
+  <p class="small muted">You can confirm reports from other residents, but you cannot vote on your own report.</p>
   {% endif %}
 
   <h3 style="margin-top:1.2rem">Tips from neighbours</h3>

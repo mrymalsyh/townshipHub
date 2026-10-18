@@ -21,6 +21,9 @@ class ManagerNavigationTests(TestCase):
         self.assertContains(response, "Facility Bookings")
         self.assertContains(response, "Inventory &amp; Returns")
         self.assertContains(response, "Admin Profile &amp; Settings")
+        self.assertContains(response, 'id="admin-sidebar-toggle"')
+        self.assertContains(response, 'class="sidebar-footer"')
+        self.assertNotContains(response, '<header class="topbar">')
 
     def test_manager_can_update_profile_settings(self):
         response = self.client.post(

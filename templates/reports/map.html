@@ -1,36 +1,121 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Community map · Township Hub{% endblock %}
-{% block head %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+{% endblock %}
 {% block content %}
-<div class="pagehead"><div><h1>Community map</h1><p class="muted">Open problems in shared areas. Tap a pin to see the reports there.</p></div></div>
-<div id="map" role="img" aria-label="Map of open problems in shared areas"></div>
-{% if not pins %}<p class="empty" style="margin-top:1rem">No open problems in shared areas.</p>{% endif %}
+<div class="pagehead">
+  <div>
+    <h1>Community map</h1>
+    <p class="muted">Explore public reports, local alerts, facility schedules and walking routes.</p>
+  </div>
+</div>
+<section class="map-announcements" aria-label="Live township alerts">
+  <strong class="map-announcements-label">Township alerts</strong>
+  <div class="map-announcements-list">
+    <div class="map-announcements-track">
+      {% for announcement in announcements %}
+      <a href="{{ announcement.url }}"
+         {% if announcement.lat is not None %}data-alert-lat="{{ announcement.lat }}" data-alert-lng="{{ announcement.lng }}" data-alert-url="{{ announcement.url }}" data-alert-target="{{ announcement.target_label }}"{% endif %}>
+        <span aria-hidden="true">{% if announcement.kind == "facility" %}🚨{% else %}🚧{% endif %}</span>
+        {{ announcement.text }}
+      </a>
+      {% empty %}
+      <span class="map-no-alerts">No active maintenance or detour alerts today.</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% if user.is_manager and predictive_alerts %}
+<section class="map-alerts" aria-label="Predictive hotspot alerts">
+  <h2>Predictive hotspot alerts</h2>
+  {% for alert in predictive_alerts %}
+  <article class="map-alert">
+    <strong>Recurring hotspot near {{ alert.name }}</strong>
+    <p>System detected {{ alert.count }} reports within a 50m radius over 14 days.</p>
+    <p><b>Suggested action:</b> {{ alert.action }}</p>
+    <a href="{% url 'insights_home' %}">Open AI Predictive Insights</a>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+<section class="map-quick-jump" aria-label="Quick jump to township zones">
+  <h2>Quick jump</h2>
+  <div class="map-zone-pills">
+    {% for zone in quick_zones %}
+    <button type="button" data-zone="{{ zone.key }}" {% if not zone.available %}disabled title="No mapped location is configured for this zone yet"{% else %}title="Show {{ zone.location_name }} on map"{% endif %}>
+      {{ zone.label }}{% if zone.available %}<span class="zone-report-count" data-zone-count="{{ zone.key }}"></span>{% endif %}
+    </button>
+    {% endfor %}
+  </div>
+  <p class="small muted">Zones without a mapped township location are disabled until one is added.</p>
+</section>
+<div class="map-frame">
+  <div class="map-controls" role="group" aria-label="Filter map reports">
+    <button type="button" data-map-filter="all" aria-pressed="true">All Reports</button>
+    <button type="button" data-map-filter="active" aria-pressed="false">Active Hazards Only</button>
+    <button type="button" data-map-filter="maintenance" aria-pressed="false">Under Maintenance</button>
+    <button type="button" data-map-filter="detours" aria-pressed="false">Suggested Detours</button>
+  </div>
+  <div class="map-tools">
+    <section class="map-tool-panel" aria-label="Nearby distance filter">
+      <strong>Nearby me</strong>
+      <div class="map-tool-buttons" role="group" aria-label="Filter by distance">
+        <button type="button" data-radius="500">500 m</button>
+        <button type="button" data-radius="1000">1 km</button>
+        <button type="button" data-radius="all" aria-pressed="true">Whole township</button>
+      </div>
+      <span id="location-status" class="small muted" aria-live="polite">Choose a distance to use your location.</span>
+    </section>
+    <section class="map-tool-panel" aria-label="Map display mode">
+      <strong>Map layers</strong>
+      <div class="map-tool-buttons" role="group" aria-label="Select map mode">
+        <button type="button" data-map-mode="standard" aria-pressed="true">🗺️ Standard View</button>
+        <button type="button" data-map-mode="heat">🌡️ Hazard Heatmap</button>
+        <button type="button" data-map-mode="pedestrian">🚶 Accessibility &amp; Pedestrian</button>
+        <button type="button" data-map-mode="night">🌙 Night Safety</button>
+      </div>
+      <span id="mode-status" class="small muted" aria-live="polite"></span>
+    </section>
+    <section class="map-tool-panel route-tool" aria-label="Smart route finder">
+      <strong>Smart route finder</strong>
+      <form id="route-form" class="route-form">
+        <label>Start
+          <select id="route-start" required>
+            <option value="">Choose a start</option>
+            {% for location in route_locations %}<option value="{{ location.id }}">{{ location.name }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Destination
+          <select id="route-end" required>
+            <option value="">Choose a destination</option>
+            {% for location in route_locations %}<option value="{{ location.id }}">{{ location.name }}</option>{% endfor %}
+          </select>
+        </label>
+        <button class="btn small" type="submit">Find safer walk</button>
+      </form>
+      <p class="small muted">Walking route and nearby reported hazards are checked against public map reports.</p>
+      <div id="route-result" class="route-result" role="status" aria-live="polite"></div>
+    </section>
+  </div>
+  <div id="map" role="region" aria-label="Clustered map of public township reports"></div>
+  <section class="hotspot-drawer" id="hotspot-drawer" aria-live="polite" aria-label="Hotspot summary" hidden>
+    <button class="hotspot-close" id="hotspot-close" type="button" aria-label="Close hotspot summary">&times;</button>
+    <div id="hotspot-content"></div>
+  </section>
+</div>
+<form id="map-vote-csrf" hidden>{% csrf_token %}</form>
+{% if not pins %}<p class="empty map-empty">No public reports to display on the map yet.</p>{% endif %}
+<p class="small muted map-note">Nearby mode asks for browser location permission and uses it only in this browser session. The walking-route service receives only the selected township start and destination coordinates.</p>
 {{ pins|json_script:"pins-data" }}
+{{ predictive_alerts|json_script:"predictive-alerts-data" }}
+{{ quick_zones|json_script:"quick-zones-data" }}
+{{ route_locations|json_script:"route-locations-data" }}
 {% endblock %}
 {% block scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-(function () {
-  var pins = JSON.parse(document.getElementById("pins-data").textContent);
-  var map = L.map("map").setView([3.2160, 101.5108], 17);
-  L.tileLayer("https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles style by <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>, hosted by <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
-  }).addTo(map);
-  var bounds = [];
-  pins.forEach(function (p) {
-    var urgent = p.reports.some(function (r) { return r.urgency === "high"; });
-    var colour = urgent ? "#70020f" : "#fedee1";
-    var textColour = urgent ? "#fedee1" : "#70020f";
-    var icon = L.divIcon({className: "", iconSize: [34, 34], iconAnchor: [17, 17],
-      html: '<div style="background:' + colour + ';color:' + textColour + ';border:3px solid #fff;border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font:700 15px -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.4)">' + p.reports.length + '</div>'});
-    var html = "<b>" + p.name + "</b><br>" + p.reports.map(function (r) {
-      return '<a href="' + r.url + '">' + r.title.replace(/</g, "&lt;") + "</a>"; }).join("<br>");
-    L.marker([p.lat, p.lng], {icon: icon}).addTo(map).bindPopup(html);
-    bounds.push([p.lat, p.lng]);
-  });
-  if (bounds.length > 1) map.fitBounds(bounds, {padding: [40, 40], maxZoom: 18});
-  else if (bounds.length === 1) map.setView(bounds[0], 18);
-})();
-</script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="{% static 'js/community-map.js' %}?v=2"></script>
 {% endblock %}
