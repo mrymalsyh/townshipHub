@@ -8,13 +8,28 @@
   <div class="stat"><b>{{ item.on_loan }}</b>on loan</div>
   <div class="stat"><b>{{ item.total_quantity }}</b>owned</div>
 </div>
-{% if item.available %}
+{% if reservation %}
+<h2>Your item is ready</h2>
+<p>Next-in-line checkout is available. {% if reservation.locker %}Transfer locker: {{ reservation.locker.name }}{% if reservation.locker.location_description %} · {{ reservation.locker.location_description }}{% endif %}.{% else %}Collect it from the management desk.{% endif %}</p>
+{% if reservation.pickup_code %}<p><strong>One-time collection code: {{ reservation.pickup_code }}</strong></p><p class="small muted">This is an in-app handoff code and does not unlock physical locker hardware.</p>{% endif %}
+<h2>Complete checkout</h2>
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="reservation_id" value="{{ reservation.pk }}">
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Confirm collection</button>
+</form>
+{% elif item.available %}
 <h2>Borrow it</h2>
 <form method="post">{% csrf_token %}
   {% include "_form.html" %}
   <button class="btn" type="submit">Reserve</button>
 </form>
 <p class="small muted">Collect it from the management office, and return it there so it can be checked.</p>
-{% else %}<div class="empty">All units are out right now. Check back soon.</div>{% endif %}
+{% else %}
+<div class="empty">All units are out right now.</div>
+<form method="post" action="{% url 'item_waitlist' item.pk %}">{% csrf_token %}
+  <button class="btn" type="submit">Join next-in-line queue</button>
+</form>
+{% endif %}
 <p><a href="{% url 'item_list' %}">Back to all items</a></p>
 {% endblock %}

@@ -3,6 +3,8 @@
   var zones = JSON.parse(document.getElementById("quick-zones-data").textContent);
   var routeLocations = JSON.parse(document.getElementById("route-locations-data").textContent);
   var map = L.map("map").setView([3.2160, 101.5108], 16);
+  L.DomEvent.disableClickPropagation(document.querySelector(".map-controls"));
+  L.DomEvent.disableScrollPropagation(document.querySelector(".map-controls"));
   L.tileLayer("https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles style by <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>, hosted by <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'

@@ -1,17 +1,94 @@
 {% extends "base.html" %}
 {% block title %}My loans · Township Hub{% endblock %}
 {% block content %}
-<div class="pagehead"><h1>My loans</h1><a class="btn" href="{% url 'item_list' %}">Borrow an item</a></div>
-{% if loans %}<ul class="rows">
-{% for l in loans %}
-  <li class="row {% if l.is_overdue %}u-high{% elif l.is_returned %}u-low done{% else %}u-medium{% endif %}">
+<div class="pagehead">
+  <div><h1>My borrowed items</h1><p class="muted">Care points: <strong>{{ care_points }}</strong></p></div>
+  <a class="btn" href="{% url 'item_list' %}">Borrow an item</a>
+</div>
+
+{% if waitlist %}
+<section class="card">
+  <h2>Next-in-line items</h2>
+  {% for entry in waitlist %}
+  <div class="row">
+    <div class="main">
+      <strong>{{ entry.item.name }}</strong>
+      {% if entry.status == "ready" %}
+        <span class="pill green">Ready for collection</span>
+        {% if entry.locker %}
+          <p class="small">Transfer locker: {{ entry.locker.name }}{% if entry.locker.location_description %} · {{ entry.locker.location_description }}{% endif %}</p>
+          {% if entry.pickup_code %}<p><strong>One-time collection code: {{ entry.pickup_code }}</strong></p>{% endif %}
+          <p class="small muted">This code is an in-app handoff code; smart-locker unlocking requires a separate hardware integration.</p>
+        {% else %}
+          <p class="small">Collect from the management desk.</p>
+        {% endif %}
+        <a class="btn small" href="{% url 'item_detail' entry.item.pk %}">Complete checkout</a>
+      {% else %}
+        <span class="pill yellow">Waiting · joined {{ entry.created_at|date:"j M, H:i" }}</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if loan_entries %}
+<h2>Your loans</h2>
+<ul class="rows">
+{% for entry in loan_entries %}
+  {% with l=entry.loan %}
+  <li class="row {% if l.is_overdue %}u-high{% elif l.is_returned %}u-low done{% else %}u-medium{% endif %}" style="display:block">
     <div class="main">
       <b>{{ l.quantity }} x {{ l.item.name }}</b>
-      <div class="small muted">Borrowed {{ l.borrowed_at|date:"j M" }}{% if l.purpose %} &middot; {{ l.purpose }}{% endif %}</div>
-      {% if l.is_returned %}<span class="pill green">Returned: {{ l.get_return_condition_display }}</span>{% if l.admin_notes %}<span class="small muted">{{ l.admin_notes }}</span>{% endif %}
-      {% elif l.is_overdue %}<span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>
-      {% else %}<span class="pill yellow">Return by {{ l.due_at|date:"D j M, H:i" }}</span>{% endif %}
+      <div class="small muted">Borrowed {{ l.borrowed_at|date:"j M" }}{% if l.purpose %} · {{ l.purpose }}{% endif %}</div>
+      {% if l.is_returned %}
+        <span class="pill green">Returned: {{ l.get_return_condition_display }}</span>
+        {% if l.admin_notes %}<p class="small muted">{{ l.admin_notes }}</p>{% endif %}
+      {% elif l.return_ticket %}
+        {% if l.return_ticket.status == "pending" %}
+          <span class="pill yellow">Pending admin inspection</span>
+          <p class="small">Drop-off: {{ l.return_ticket.get_destination_display }}{% if l.return_ticket.locker %} · {{ l.return_ticket.locker.name }}{% endif %}</p>
+          {% if l.return_ticket.return_code %}
+            <p><strong>One-time return code: {{ l.return_ticket.return_code }}</strong></p>
+            <p class="small muted">This app records the code for management; physical locker unlocking requires a hardware integration.</p>
+          {% endif %}
+        {% else %}
+          <span class="pill {% if l.return_ticket.status == 'flagged' %}red{% else %}green{% endif %}">{{ l.return_ticket.get_status_display }}</span>
+        {% endif %}
+      {% elif l.is_overdue %}
+        <span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>
+      {% else %}
+        <span class="pill yellow">Return by {{ l.due_at|date:"D j M, H:i" }}</span>
+      {% endif %}
     </div>
+
+    {% if not l.is_returned and not l.return_ticket %}
+    <details class="inventory-collapse return-collapse">
+      <summary>Return this item</summary>
+      <div class="map-tool-panel">
+        <p class="small muted">Choose where you will leave it, attach a photo or video, and confirm its condition. Management must verify every return before stock is released.</p>
+        <form method="post" action="{% url 'request_return' l.pk %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ entry.return_form.as_p }}
+          <button class="btn" type="submit">Submit return for inspection</button>
+        </form>
+      </div>
+    </details>
+    {% endif %}
+    {% if not l.is_returned and not l.return_ticket and not l.extension_count %}
+    <form method="post" action="{% url 'loan_extension' l.pk %}" class="inline" style="margin-top:.5rem">
+      {% csrf_token %}
+      <button class="btn ghost small" type="submit">Request 1-hour extension</button>
+      <span class="small muted">Auto-approved only when nobody is waiting.</span>
+    </form>
+    {% elif l.extension_count %}
+      <p class="small muted">One-hour extension already used.</p>
+    {% endif %}
   </li>
-{% endfor %}</ul>{% else %}<div class="empty">You have not borrowed anything yet.</div>{% endif %}
+  {% endwith %}
+{% endfor %}
+</ul>
+{% else %}
+<div class="empty">You have not borrowed anything yet.</div>
+{% endif %}
 {% endblock %}

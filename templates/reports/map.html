@@ -53,12 +53,6 @@
   <p class="small muted">Zones without a mapped township location are disabled until one is added.</p>
 </section>
 <div class="map-frame">
-  <div class="map-controls" role="group" aria-label="Filter map reports">
-    <button type="button" data-map-filter="all" aria-pressed="true">All Reports</button>
-    <button type="button" data-map-filter="active" aria-pressed="false">Active Hazards Only</button>
-    <button type="button" data-map-filter="maintenance" aria-pressed="false">Under Maintenance</button>
-    <button type="button" data-map-filter="detours" aria-pressed="false">Suggested Detours</button>
-  </div>
   <div class="map-tools">
     <section class="map-tool-panel" aria-label="Nearby distance filter">
       <strong>Nearby me</strong>
@@ -100,7 +94,14 @@
       <div id="route-result" class="route-result" role="status" aria-live="polite"></div>
     </section>
   </div>
-  <div id="map" role="region" aria-label="Clustered map of public township reports"></div>
+  <div id="map" role="region" aria-label="Clustered map of public township reports">
+    <div class="map-controls" role="group" aria-label="Filter map reports">
+      <button type="button" data-map-filter="all" aria-pressed="true">All Reports</button>
+      <button type="button" data-map-filter="active" aria-pressed="false">Active Hazards Only</button>
+      <button type="button" data-map-filter="maintenance" aria-pressed="false">Under Maintenance</button>
+      <button type="button" data-map-filter="detours" aria-pressed="false">Suggested Detours</button>
+    </div>
+  </div>
   <section class="hotspot-drawer" id="hotspot-drawer" aria-live="polite" aria-label="Hotspot summary" hidden>
     <button class="hotspot-close" id="hotspot-close" type="button" aria-label="Close hotspot summary">&times;</button>
     <div id="hotspot-content"></div>
@@ -117,5 +118,5 @@
 {% block scripts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="{% static 'js/community-map.js' %}?v=2"></script>
+<script src="{% static 'js/community-map.js' %}?v=3"></script>
 {% endblock %}

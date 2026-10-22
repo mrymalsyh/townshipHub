@@ -1,46 +1,119 @@
 {% extends "base.html" %}
-{% block title %}Items and returns · Township Hub{% endblock %}
+{% block title %}Inventory and returns · Township Hub{% endblock %}
 {% block content %}
-<h1>Items and returns</h1>
+<h1>Inventory and returns</h1>
 
-<h2>Waiting to be returned</h2>
-{% if outstanding %}
+<details class="inventory-collapse pending-returns-collapse">
+  <summary>
+    <span>Returns pending inspection</span>
+    {% if pending_returns %}<span class="pill yellow">{{ pending_returns|length }} pending</span>{% endif %}
+  </summary>
+  {% if pending_returns %}
 <ul class="rows">
-{% for l in outstanding %}
-  <li class="row {% if l.is_overdue %}u-high{% else %}u-medium{% endif %}" style="display:block">
-    <b>{{ l.quantity }} x {{ l.item.name }}</b> with {{ l.user }}{% if l.user.unit %} <span class="muted small">({{ l.user.unit }})</span>{% endif %}
-    {% if l.is_overdue %}<span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>{% else %}<span class="small muted">due {{ l.due_at|date:"D j M, H:i" }}</span>{% endif %}
-    <form method="post" action="{% url 'loan_return' l.pk %}" enctype="multipart/form-data" class="inline" style="margin-top:.5rem">{% csrf_token %}
-      <select name="condition" aria-label="Condition on return">
-        {% for value, label in return_form.fields.condition.choices %}<option value="{{ value }}"{% if value == 'good' %} selected{% endif %}>{{ label }}</option>{% endfor %}
-      </select>
-      <input type="text" name="notes" placeholder="Notes (optional)" aria-label="Notes">
-      <input type="file" name="photo" accept="image/*" aria-label="Photo" style="width:auto">
-      <button class="btn small" type="submit">Check in</button>
+{% for ticket in pending_returns %}
+  <li class="row u-medium" style="display:block">
+    <strong>{{ ticket.loan.quantity }} x {{ ticket.loan.item.name }}</strong> from {{ ticket.loan.user }}
+    <div class="small muted">
+      Submitted {{ ticket.submitted_at|date:"D j M, H:i" }} ·
+      {{ ticket.get_destination_display }}{% if ticket.locker %} · {{ ticket.locker.name }}{% if ticket.locker.location_description %} ({{ ticket.locker.location_description }}){% endif %}{% endif %}
+    </div>
+    {% if ticket.return_code %}<p><strong>Return code: {{ ticket.return_code }}</strong></p>{% endif %}
+    <p class="small">
+      Cleaned: {% if ticket.cleaned %}Yes{% else %}No{% endif %} ·
+      Accessories included: {% if ticket.accessories_included %}Yes{% else %}No{% endif %}
+    </p>
+    {% if ticket.maintenance_requested %}<p class="pill yellow">Resident reported maintenance needed; no resident penalty.</p>{% endif %}
+    {% if ticket.evidence %}<p><a href="{{ ticket.evidence.url }}" target="_blank" rel="noopener">View return photo / video</a></p>{% endif %}
+    <form method="post" action="{% url 'loan_return' ticket.pk %}" class="map-tool-panel">
+      {% csrf_token %}
+      {{ review_form.as_p }}
+      <div class="inline">
+        <button class="btn small" name="action" value="approve" type="submit">Approve return</button>
+        <button class="btn small ghost" name="action" value="flag" type="submit">Flag issue &amp; queue maintenance</button>
+      </div>
     </form>
   </li>
 {% endfor %}
 </ul>
-{% else %}<div class="empty">Everything has been returned.</div>{% endif %}
+  {% else %}<div class="empty">No returns are waiting for inspection.</div>{% endif %}
+</details>
 
-<h2>Stock and condition</h2>
+<h2>Item maintenance queue</h2>
+{% if issues %}
+<ul class="rows">
+{% for issue in issues %}
+  <li class="row u-high">
+    <div class="main">
+      <strong>{{ issue.item.name }}</strong>
+      <div class="small muted">{{ issue.description|default:"Maintenance requested on return" }} · {{ issue.created_at|date:"j M, H:i" }}</div>
+      {% if issue.reported_by %}<span class="small">Reported by {{ issue.reported_by }}</span>{% endif %}
+    </div>
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">No open item maintenance issues.</div>{% endif %}
+
+<h2>Return lockers</h2>
+<p class="small muted">Configure the township locker locations available in return forms. These settings do not connect to or unlock locker hardware.</p>
+<form method="post" action="{% url 'add_item_locker' %}" class="map-tool-panel" style="margin-bottom:.75rem">
+  {% csrf_token %}
+  {{ locker_form.as_p }}
+  <button class="btn small" type="submit">Add locker</button>
+</form>
+{% if lockers %}
+<ul class="rows">
+{% for locker in lockers %}
+  <li class="row">
+    <div class="main"><strong>{{ locker.name }}</strong>
+      {% if locker.location_description %}<div class="small muted">{{ locker.location_description }}</div>{% endif %}
+      <span class="pill {% if locker.is_active %}green{% else %}yellow{% endif %}">{% if locker.is_active %}Active{% else %}Inactive{% endif %}</span>
+    </div>
+    <form method="post" action="{% url 'toggle_item_locker' locker.pk %}">{% csrf_token %}
+      <button class="btn ghost small" type="submit">{% if locker.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+    </form>
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">No locker locations configured. Management desk returns are still available.</div>{% endif %}
+
+<h2>Active loans</h2>
+{% if outstanding %}
+<ul class="rows">
+{% for l in outstanding %}
+  <li class="row {% if l.is_overdue %}u-high{% else %}u-medium{% endif %}">
+    <div class="main">
+      <b>{{ l.quantity }} x {{ l.item.name }}</b> with {{ l.user }}
+      {% if l.is_overdue %}<span class="pill red">Overdue since {{ l.due_at|date:"j M, H:i" }}</span>
+      {% else %}<span class="small muted">due {{ l.due_at|date:"D j M, H:i" }}</span>{% endif %}
+      {% if l.return_ticket %}<span class="pill yellow">Return awaiting inspection</span>{% endif %}
+    </div>
+  </li>
+{% endfor %}
+</ul>
+{% else %}<div class="empty">No active loans.</div>{% endif %}
+
+<h2>Lifecycle and stock</h2>
+<p class="small muted">Usage and damage history provide service signals; repeated damage is compared with recorded repair and replacement costs.</p>
 <div class="table-wrap"><table>
-  <tr><th>Item</th><th>Owned</th><th>On loan</th><th>Broken</th><th>Available</th><th>Advice</th></tr>
+  <tr><th>Item</th><th>Owned</th><th>Borrowed</th><th>On loan</th><th>In maintenance</th><th>Available</th><th>Damage history / recommendation</th></tr>
   {% for i in items %}
   <tr>
-    <td><b>{{ i.name }}</b></td><td>{{ i.total_quantity }}</td><td>{{ i.on_loan }}</td>
+    <td><b>{{ i.name }}</b></td><td>{{ i.total_quantity }}</td><td>{{ i.borrow_count }}</td><td>{{ i.on_loan }}</td>
     <td>{{ i.out_of_service }}{% if i.out_of_service %}
       <form method="post" action="{% url 'item_repaired' i.pk %}" style="display:inline">{% csrf_token %}<button class="linkbtn small" type="submit">mark one repaired</button></form>{% endif %}</td>
     <td>{{ i.available }}</td>
-    <td>{% if i.advice %}<span class="pill yellow">Check</span> {{ i.advice }}{% else %}<span class="muted">Fine</span>{% endif %}</td>
+    <td>{{ i.damaged_returns }} damaged return(s). {% if i.advice %}<span class="pill yellow">Review</span> {{ i.advice }}{% else %}<span class="muted">No repeat-damage signal</span>{% endif %}</td>
   </tr>
   {% endfor %}
 </table></div>
 
-<h2>Recently returned</h2>
+<h2>Recently inspected returns</h2>
 {% if recent %}<div class="table-wrap"><table>
-  <tr><th>Item</th><th>Resident</th><th>Returned</th><th>Condition</th><th>Notes</th></tr>
-  {% for l in recent %}<tr><td>{{ l.quantity }} x {{ l.item.name }}</td><td>{{ l.user }}</td><td>{{ l.returned_at|date:"j M" }}</td>
-    <td><span class="pill {% if l.return_condition == 'good' or l.return_condition == 'unused' %}green{% elif l.return_condition == 'needs_cleaning' %}yellow{% else %}red{% endif %}">{{ l.get_return_condition_display }}</span></td><td>{{ l.admin_notes }}</td></tr>{% endfor %}
-</table></div>{% else %}<div class="empty">No returns recorded yet.</div>{% endif %}
+  <tr><th>Item</th><th>Resident</th><th>Inspected</th><th>Status</th><th>Condition</th><th>Notes</th></tr>
+  {% for ticket in recent %}<tr>
+    <td>{{ ticket.loan.quantity }} x {{ ticket.loan.item.name }}</td><td>{{ ticket.loan.user }}</td>
+    <td>{{ ticket.verified_at|date:"j M" }}</td><td>{{ ticket.get_status_display }}</td>
+    <td>{{ ticket.get_condition_display }}</td><td>{{ ticket.notes }}</td>
+  </tr>{% endfor %}
+</table></div>{% else %}<div class="empty">No returns inspected yet.</div>{% endif %}
 {% endblock %}
